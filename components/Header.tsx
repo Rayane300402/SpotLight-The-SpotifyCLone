@@ -1,19 +1,21 @@
 "use client";
 
 import { twMerge } from "tailwind-merge";
-import { RxCaretLeft, RxCaretRight } from "react-icons/rx";
 import { useRouter } from "next/navigation";
+
+import { RxCaretLeft, RxCaretRight } from "react-icons/rx";
 import { FaUserAlt } from "react-icons/fa";
-// import { useSupabaseClient } from '@supabase/auth-helpers-react';
-// import { toast } from "react-hot-toast";
 import { HiHome } from "react-icons/hi";
 import { BiSearch } from "react-icons/bi";
+import { toast } from "react-hot-toast";
 
-// import useAuthModal from "@/hooks/useAuthModal";
-// import { useUser } from "@/hooks/useUser";
 // import usePlayer from "@/hooks/usePlayer";
+import useAuthModal from "@/hooks/useAuthModal";
+import { useUser } from "@/hooks/useUser";
 
 import Button from "./Button";
+
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
 
 interface Headerprops {
   children: React.ReactNode;
@@ -21,9 +23,24 @@ interface Headerprops {
 }
 
 const Header: React.FC<Headerprops> = ({ children, className }) => {
+  const authmodal = useAuthModal();
   const router = useRouter();
 
-  const handleLogOut = async () => {};
+  const supabaseclient = useSupabaseClient();
+  const { user } = useUser();
+
+  const handleLogOut = async () => {
+    const { error } = await supabaseclient.auth.signOut();
+    // reset playing songs
+    router.refresh();
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Logged out successfully");
+    }
+  };
+
   return (
     <div
       className={twMerge(
@@ -64,20 +81,37 @@ const Header: React.FC<Headerprops> = ({ children, className }) => {
           </button>
         </div>
         <div className="flex justify-between items-center gap-x-4">
-          <>
-            <div>
-              <Button className=" bg-transparent text-neutral-300 font-medium" onClick={()=>{}}>
-                {/* <FaUserAlt size={20} className="text-white" /> */}
-                Sign Up
+          {user ? (
+            <div className="flex gap-x-4 items-center">
+              <Button onClick={handleLogOut} className="bg-white px-6 py-2">
+                Log out
+              </Button>
+              <Button className="bg-white" onClick={() =>router.push('/account')}>
+                <FaUserAlt />
               </Button>
             </div>
-            <div>
-              <Button className=" bg-white px-6 py-2" onClick={()=>{}}>
-                {/* <FaUserAlt size={20} className="text-white" /> */}
-                Log In
-              </Button>
-            </div>
-          </>
+          ) : (
+            <>
+              <div>
+                <Button
+                  className=" bg-transparent text-neutral-300 font-medium"
+                  onClick={authmodal.open}
+                >
+                  {/* <FaUserAlt size={20} className="text-white" /> */}
+                  Sign Up
+                </Button>
+              </div>
+              <div>
+                <Button
+                  className=" bg-white px-6 py-2"
+                  onClick={authmodal.open}
+                >
+                  {/* <FaUserAlt size={20} className="text-white" /> */}
+                  Log In
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </div>
       {children}
@@ -86,4 +120,3 @@ const Header: React.FC<Headerprops> = ({ children, className }) => {
 };
 
 export default Header;
-
